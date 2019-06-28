@@ -1,0 +1,234 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-flow">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+
+        padding: 10px;
+      }
+      div.bar {
+        display: inline-block;
+        width: 50px;
+        height: 75px;
+        background: teal;
+        margin-right: 5px;
+      }
+
+      svg rect {
+        fill: gray;
+      }
+      svg text {
+        fill: yellow;
+        font: 12px sans-serif;
+        text-anchor: end;
+      }
+
+      .arc text {
+        font: 12px arial;
+        text-anchor: middle;
+      }
+
+      .arc path {
+        stroke: #fff;
+      }
+
+      .title {
+        fill: green;
+        font-weight: italic;
+      }
+    </style>
+
+    <div id="holder"></div>
+    <div id="graph"></div>
+    <div id="graphCircle"></div>
+    <div id="graphPie">
+      <p>
+        "Top population states in india"
+      </p>
+      <svg id="svgPie"></svg>
+    </div>
+
+    <div id = "svgcontainer"></div>
+  </template>
+
+  <script>
+    class MyFlow extends Polymer.Element {
+      static get is() { return 'my-flow'; }
+
+      ready() {
+        super.ready();
+
+        let dataset = [5, 3, 8, 9, 12];
+
+        d3.select(this.$.holder).selectAll('div')
+          .data(dataset)
+          .enter()
+          .append('div')
+          .attr('class','bar')
+          .style("height", function(d) {
+            return d * 2 + "px";
+        });
+
+        d3.select(this.$.holder).transition().style("background-color", "lightblue").duration(500);
+
+        let svg = d3.select(this.$.svgcontainer)
+          .append("svg")
+          .attr("width", 300)
+          .attr("height", 300);
+
+        svg.append("line")
+          .attr("x1", 100)
+          .attr("y1", 100)
+          .attr("x2", 200)
+          .attr("y2", 200)
+          .style("stroke", "rgb(255,0,0)")
+          .style("stroke-width", 2);
+
+        svg.append("rect")
+          .attr("x", 20)
+          .attr("y", 20)
+          .attr("width", 20)
+          .attr("height", 20)
+          .attr("fill", "green");
+
+        svg.append("circle")
+          .attr("cx", 60)
+          .attr("cy", 60)
+          .attr("r", 20)
+          .attr("fill", "red");
+
+        svg.append("ellipse")
+          .attr("cx", 100)
+          .attr("cy", 60)
+          .attr("rx", 20)
+          .attr("ry", 40)
+          .attr("transform", 'rotate(60, 100, 60)')
+          .attr("fill", "gold");
+
+
+// bar chart ===============================================
+
+        let data = [10, 5, 12, 15],
+        width = 300,
+        scaleFactor = 20,
+        barHeight = 30;
+
+        let graph = d3.select(this.$.graph)
+          .append("svg")
+          .attr("width", width)
+          .attr("height", barHeight * data.length);
+
+        let bar = graph.selectAll("g")
+          .data(data)
+          .enter()
+          .append("g")
+          .attr("transform", function(d, i) {
+            return "translate(0," + i * barHeight + ")";
+          });
+
+        bar.append("rect")
+          .attr("width", d => d * scaleFactor)
+          .attr("height", barHeight - 1);
+
+        bar.append("text")
+          .attr("x", d => d * scaleFactor)
+          .attr("y", barHeight / 2)
+          .attr("dy", ".35em")
+          .text(d => d);
+
+// Circle Chart == ========================================================================
+        let dataCircle = [10, 20, 30],
+            colors = ['green', 'purple', 'yellow'];
+
+
+        let svgCircle = d3.select(this.$.graphCircle)
+          .append("svg")
+          .attr("width", 400)
+          .attr("height", 200);
+
+        let gCircle = svgCircle.selectAll("g")
+          .data(dataCircle)
+          .enter()
+          .append("g")
+          .attr("transform", function(d, i) {
+            return "translate(0,0)";
+          });
+
+        gCircle.append("circle")
+          .attr("cx", (d, i) =>  i * 75 + 50)
+          .attr("cy", (d, i) => 75)
+          .attr("r", (d, i) => d * 1.5)
+          .attr("fill", (d, i) => colors[i]);
+
+        gCircle.append("text")
+          .attr("x", (d, i) => i * 75 + 25)
+          .attr("y", 80)
+          .attr("stroke", "teal")
+          .attr("font-size", "10px")
+          .attr("font-family", "sans-serif")
+          .text(d => d);
+
+// graphPie ===============================================================
+        let svgPie = d3.select(this.$.svgPie)
+          .attr("width", 300)
+          .attr('height', 300);
+
+        let radius = 150;
+
+        let gPie = svgPie.append("g")
+          .attr("transform", "translate(150, 150)");
+
+        let path = d3.arc()
+          .outerRadius(radius - 10)
+          .innerRadius(80);
+
+        let colorPie = d3.scaleOrdinal(['gray', 'green', 'brown', 'orange', 'blue', 'gold', 'red']);
+
+        let pie = d3.pie()
+          .value(function(d) { return d.percent; });
+
+        let label = d3.arc()
+          .outerRadius(radius)
+          .innerRadius(radius - 80);
+
+        d3.csv("population.csv", function(error, data) {
+          if (error) {
+            throw error;
+          }
+
+          let arc = gPie.selectAll(".arc")
+            .data(pie(data))
+            .enter()
+            .append("g")
+            .attr("class", "arc");
+
+          arc.append("path")
+            .attr("d", path)
+            .attr("fill", function(d) { return colorPie(d.data.states); });
+
+          arc.append("text")
+              .attr("transform", function(d) {
+                  return "translate(" + label.centroid(d) + ")";
+              })
+              .text(function(d) { return d.data.states; });
+        });
+
+      }
+    }
+
+    window.customElements.define(MyFlow.is, MyFlow);
+  </script>
+</dom-module>
